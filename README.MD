@@ -1,0 +1,38 @@
+# PodcastPal
+
+PodcastPal is a Python application that helps you track and analyze your Overcast podcast listening history. It fetches your recently played episodes, enriches them with additional metadata, and stores them in MongoDB for analysis.
+
+## Features
+
+- Fetches recently played episodes from Overcast
+- Extracts episode metadata like artwork, summaries, and play progress 
+- Caches OPML data to reduce API calls
+- Stores enriched podcast data in MongoDB
+- Handles authentication and session management
+- Tracks listening progress and history over time
+- Supports multiple podcast platforms
+- Provides data export capabilities
+- Includes detailed episode metadata
+- Offers podcast analytics and insights
+
+## Setup
+
+1. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Configure environment variables:
+   - Copy `.env.example` to `.env`
+   - Add your Overcast credentials
+   - Configure MongoDB connection details
+
+3. Initialize the database:
+   ```bash
+   python init_db.py
+   ```
+
+4. Run the application:
+   ```bash
+   python enriched_overcast_parser.py
+   ```
