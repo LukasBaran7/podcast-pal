@@ -19,16 +19,16 @@ def process_podcasts(podcasts, session):
     now = datetime.now(warsaw_tz)
     return [process_podcast(podcast, now, session) for podcast in podcasts]
 
-def process_podcast(podcast, now, session):
+def process_podcast(podcast, now, session, days_to_keep=DAYS_TO_KEEP):
     """Process a single podcast and its episodes"""
     pod_title = podcast.attrib['title']
     episodes = list(podcast)
     
-    artwork_url = _get_podcast_artwork(episodes, session) if episodes else ''
+    artwork_url = get_podcast_artwork(episodes, session) if episodes else ''
     processed_episodes = [
         process_episode(episode, now, session)
         for episode in episodes
-        if should_process_episode(episode, now)
+        if should_process_episode(episode, now, days_to_keep)
     ]
             
     warsaw_tz = gettz('Europe/Warsaw')
@@ -40,7 +40,7 @@ def process_podcast(podcast, now, session):
         "source": "overcast"
     }
 
-def _get_podcast_artwork(episodes, session):
+def get_podcast_artwork(episodes, session):
     """Get artwork URL for podcast from first episode"""
     overcast_url = episodes[0].attrib['overcastUrl']
     return get_artwork_url(overcast_url, session)
@@ -70,7 +70,7 @@ def process_episode(episode, now, session):
         "summary": summary
     }
 
-def should_process_episode(episode, now):
+def should_process_episode(episode, now, days_to_keep=DAYS_TO_KEEP):
     """Check if an episode should be processed based on play status and recency"""
     if episode.attrib.get('played', '0') != '1':
         return False
@@ -78,4 +78,4 @@ def should_process_episode(episode, now):
     warsaw_tz = gettz('Europe/Warsaw')
     user_activity_date = parse_dt(episode.attrib['userUpdatedDate']).astimezone(warsaw_tz)
     days_since_played = (now - user_activity_date).days
-    return days_since_played <= DAYS_TO_KEEP
+    return days_since_played <= days_to_keep
