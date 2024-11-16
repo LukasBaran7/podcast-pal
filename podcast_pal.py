@@ -6,25 +6,20 @@ The main entry point for clients is fetch_and_parse_podcasts(), which returns pr
 For MongoDB storage, use get_mongodb_collection() and update_podcast_collection().
 """
 
-import os
 import logging
-from dotenv import load_dotenv
-from pymongo import MongoClient
+import os
 import sys
-from session import get_authenticated_session
-from podcast_parser import parse_opml, process_podcasts
-from cache import load_cached_opml, cache_opml
+from dotenv import load_dotenv
+
+from cache import cache_opml, load_cached_opml
+from db_helper import get_mongodb_collection, update_podcast_collection
 from opml_scraper import fetch_opml, parse_opml
+from podcast_parser import parse_opml, process_podcasts
+from session import get_authenticated_session
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-def fetch_and_parse_podcasts(session):
-    """Fetch and parse podcast data from Overcast, using cache if available"""
-    cached_opml = load_cached_opml()
-    podcasts = parse_opml(cached_opml) if cached_opml else _fetch_fresh_podcasts(session)
-    return process_podcasts(podcasts, session)
 
 def _fetch_fresh_podcasts(session):
     """Fetch fresh podcast data from Overcast and cache it"""
@@ -32,82 +27,12 @@ def _fetch_fresh_podcasts(session):
     response = fetch_opml(session)
     cache_opml(response)
     return parse_opml(response)
-    
-def get_mongodb_collection():
-    """Initialize and return MongoDB collection"""
-    load_dotenv()
-    
-    # Get required environment variables
-    config = {
-        'uri': ('PODCAST_DB', 'MongoDB connection URI'),
-        'db': ('MONGODB_DATABASE', 'Database name'), 
-        'collection': ('MONGODB_COLLECTION', 'Collection name')
-    }
-    
-    # Validate all required env vars exist
-    settings = {}
-    for key, (env_var, description) in config.items():
-        value = os.getenv(env_var)
-        if not value:
-            raise ValueError(f"{env_var} environment variable is not set ({description})")
-        settings[key] = value
 
-    # Connect to MongoDB using validated settings
-    client = MongoClient(settings['uri'])
-    db = client[settings['db']]
-    collection = db[settings['collection']]
-    
-    logger.info(f"Connected to MongoDB collection '{settings['db']}.{settings['collection']}'")
-    return collection
-
-def update_podcast_collection(collection, podcast):
-    """Update a single podcast in MongoDB collection"""
-    query = {
-        "podcast_title": podcast["podcast_title"],
-        "source": "overcast"
-    }
-    
-    existing = collection.find_one(query)
-    if existing:
-        return _update_existing_podcast(collection, existing, podcast)
-    else:
-        return _insert_new_podcast(collection, podcast)
-
-def _update_existing_podcast(collection, existing, podcast):
-    """Update an existing podcast with any new episodes"""
-    # Find episodes that don't exist in the current document
-    new_episodes = _get_new_episodes(existing, podcast)
-    
-    if not new_episodes:
-        logger.debug(f"No new episodes found for podcast '{podcast['podcast_title']}'")
-        return False
-    
-    # Update document with new episodes
-    _update_podcast_document(collection, existing, podcast, new_episodes)
-    return True
-
-def _get_new_episodes(existing, podcast):
-    """Get episodes that don't exist in the current document"""
-    existing_ids = {ep["overcast_id"] for ep in existing["episodes"]}
-    return [ep for ep in podcast["episodes"] 
-            if ep["overcast_id"] not in existing_ids]
-
-def _update_podcast_document(collection, existing, podcast, new_episodes):
-    """Update MongoDB document with new episodes"""
-    logger.info(f"Updating podcast '{podcast['podcast_title']}' with {len(new_episodes)} new episodes")
-    collection.update_one(
-        {"_id": existing["_id"]},
-        {
-            "$push": {"episodes": {"$each": new_episodes}},
-            "$set": {"created_at": podcast["created_at"]}
-        }
-    )
-
-def _insert_new_podcast(collection, podcast):
-    """Insert a new podcast into the collection"""
-    logger.info(f"Inserting new podcast '{podcast['podcast_title']}' with {len(podcast['episodes'])} episodes")
-    collection.insert_one(podcast)
-    return True
+def fetch_and_parse_podcasts(session):
+    """Fetch and parse podcast data from Overcast, using cache if available"""
+    cached_opml = load_cached_opml()
+    podcasts = parse_opml(cached_opml) if cached_opml else _fetch_fresh_podcasts(session)
+    return process_podcasts(podcasts, session)
 
 def main():
     session = get_authenticated_session()
@@ -122,7 +47,8 @@ def main():
 
     if updates_count == 0:
         logger.info("No podcasts were updated in this run")
-
+    else:
+        logger.info(f"Updated {updates_count} podcasts in this run")
 
 if __name__ == '__main__':
     # Load environment variables first to check if credentials exist
