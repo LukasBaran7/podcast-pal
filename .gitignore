@@ -319,3 +319,11 @@ pyrightconfig.json
 
 # Pickle files
 *.pkl
+
+# Cache file
+/tmp/overcast.opml
+# VS Code settings files
+.vscode/*.json
+
+
+
