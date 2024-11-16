@@ -10,6 +10,7 @@ import logging
 import os
 import sys
 from dotenv import load_dotenv
+import requests
 
 from cache import cache_opml, load_cached_opml
 from db_helper import get_mongodb_collection, update_podcast_collection
@@ -24,9 +25,14 @@ logger = logging.getLogger(__name__)
 def _fetch_fresh_podcasts(session):
     """Fetch fresh podcast data from Overcast and cache it"""
     logger.info("Fetching fresh OPML data")
-    response = fetch_opml(session)
-    cache_opml(response)
-    return parse_opml(response)
+    try:
+        response = fetch_opml(session)
+        if isinstance(response.text, str):  # Only cache if we got actual new data
+            cache_opml(response)
+        return parse_opml(response)
+    except requests.RequestException as e:
+        logger.error(f"Failed to fetch fresh data: {e}")
+        sys.exit(1)
 
 def fetch_and_parse_podcasts(session):
     """Fetch and parse podcast data from Overcast, using cache if available"""

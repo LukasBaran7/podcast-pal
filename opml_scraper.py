@@ -2,6 +2,7 @@ import requests
 import sys
 from xml.etree import ElementTree
 import logging
+from cache import force_read_cache, _is_cache_expired, CACHE_PATH, CACHE_MAX_AGE_HOURS
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +19,37 @@ def fetch_opml(session):
         requests.Response: Response containing OPML data
         
     Raises:
-        SystemExit: If the request fails
+        requests.RequestException: If the request fails and no cache is available
     """
     logger.info('Fetching latest OPML export from Overcast')
-    response = session.get(OVERCAST_OPML_URL)
-    
-    if response.status_code != 200:
-        _handle_failed_request(response)
-    
-    return response
+    try:
+        response = session.get(OVERCAST_OPML_URL)
+        
+        if response.status_code != 200:
+            cached_data = force_read_cache()
+            if cached_data:
+                if _is_cache_expired(CACHE_PATH):
+                    logger.warning(f'Using expired cache (older than {CACHE_MAX_AGE_HOURS} hours) due to API error')
+                else:
+                    logger.info('Using valid cache due to API error')
+                return type('Response', (), {'text': cached_data})()
+                
+            if response.status_code == 429:
+                logger.error('Rate limited by Overcast API and no cache available')
+            _handle_failed_request(response)
+        
+        return response
+        
+    except requests.RequestException as e:
+        logger.warning(f'Request failed: {str(e)}, attempting to use cache')
+        cached_data = force_read_cache()
+        if cached_data:
+            if _is_cache_expired(CACHE_PATH):
+                logger.warning(f'Using expired cache (older than {CACHE_MAX_AGE_HOURS} hours) due to API error')
+            else:
+                logger.info('Using valid cache due to API error')
+            return type('Response', (), {'text': cached_data})()
+        raise
 
 def _handle_failed_request(response):
     """Log error details and exit on failed request"""

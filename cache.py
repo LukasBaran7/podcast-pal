@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 CACHE_PATH = '/tmp/overcast.opml'
-CACHE_MAX_AGE_HOURS = 24
+CACHE_MAX_AGE_HOURS = 36
 
 def _is_cache_expired(cache_path):
     """Check if cache file is older than max age"""
@@ -21,10 +21,35 @@ def _read_cache_file(cache_path):
         logger.error(f"Error reading cached OPML: {e}")
         return None
 
+def force_read_cache():
+    """Force read the cache file regardless of expiration"""
+    if not os.path.exists(CACHE_PATH):
+        return None
+    return _read_cache_file(CACHE_PATH)
+
+def get_cache_age():
+    """Get the age of cache file in hours and minutes"""
+    if not os.path.exists(CACHE_PATH):
+        return None
+        
+    file_age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(CACHE_PATH))
+    hours = file_age.total_seconds() / 3600
+    minutes = (hours % 1) * 60
+    
+    return {
+        'hours': int(hours),
+        'minutes': int(minutes),
+        'is_expired': file_age > timedelta(hours=CACHE_MAX_AGE_HOURS)
+    }
+
 def load_cached_opml():
     """Load cached OPML file if it exists and is not expired"""
     if not os.path.exists(CACHE_PATH):
         return None
+    
+    age = get_cache_age()
+    if age:
+        logger.info(f"Cache is {age['hours']} hours and {age['minutes']} minutes old")
         
     if _is_cache_expired(CACHE_PATH):
         logger.info(f"Cached OPML is older than {CACHE_MAX_AGE_HOURS} hour(s), will fetch fresh data")
