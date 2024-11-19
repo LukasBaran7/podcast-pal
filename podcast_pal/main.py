@@ -17,8 +17,14 @@ from podcast_pal.processor import process_podcasts
 from podcast_pal.storage.cache import load_cached_opml
 from podcast_pal.storage.mongodb import get_mongodb_collection, update_podcast
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure more detailed logging
+logging.basicConfig(
+    level=logging.INFO,  # Changed from INFO to DEBUG to see more detailed logs
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 logger = logging.getLogger(__name__)
 
 def fetch_and_parse_podcasts(session_manager) -> List[Podcast]:

@@ -20,7 +20,9 @@ def fetch_opml(session) -> requests.Response:
         if response.status_code != 200:
             cached_data = _handle_failed_response(response)
             return _create_mock_response(cached_data)
-            
+        
+        # Cache the response immediately after successful download
+        cache_opml(response.text)
         return response
         
     except requests.RequestException as e:

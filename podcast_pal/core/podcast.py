@@ -1,10 +1,11 @@
 """
 Core data models for podcasts and episodes
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import List, Optional, TypeAlias
 from xml.etree.ElementTree import Element
+import html
 
 # Type alias for raw XML podcast data
 RawPodcastData: TypeAlias = Element
@@ -16,7 +17,7 @@ class Episode:
     overcast_url: str
     overcast_id: str
     published_date: datetime
-    play_progress: Optional[str]
+    play_progress: Optional[int]
     last_played_at: Optional[datetime]
     summary: str
 
@@ -35,6 +36,13 @@ class Episode:
                 if attrs.get('userUpdatedDate') else None,
             summary=summary
         )
+
+    def to_dict(self):
+        # Convert the Episode to a dictionary with proper encoding
+        data = asdict(self)
+        # Decode HTML entities in the summary
+        data['summary'] = html.unescape(data['summary'])
+        return data
 
 @dataclass
 class Podcast:
