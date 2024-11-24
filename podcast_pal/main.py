@@ -44,8 +44,7 @@ def main():
     """Main entry point for the application"""
     try:
         # Initialize session
-        session_path = os.getenv('SESSION_PATH')
-        session_manager = SessionManager(session_path)
+        session_manager = SessionManager()
         
         # Process podcasts
         processed_podcasts = fetch_and_parse_podcasts(session_manager)
