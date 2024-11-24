@@ -1,4 +1,3 @@
-"""PodcastPal package initialization"""
-from importlib.metadata import version
+"""PodcastPal: Your friendly podcast data companion"""
 
-__version__ = version("podcast_pal") 
+__version__ = "0.1.0" 
