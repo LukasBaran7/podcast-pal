@@ -1,0 +1,37 @@
+name: Daily Podcast Sync
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every day
+    - cron: '0 0 * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        
+    - name: Create .env file
+      run: |
+        echo "PODCAST_DB=${{ secrets.PODCAST_DB }}" >> .env
+        echo "EMAIL=${{ secrets.OVERCAST_EMAIL }}" >> .env
+        echo "PASSWORD=${{ secrets.OVERCAST_PASSWORD }}" >> .env
+        echo "SESSION_PATH=overcast_session.pkl" >> .env
+        echo "MONGODB_DATABASE=${{ secrets.MONGODB_DATABASE }}" >> .env
+        echo "MONGODB_COLLECTION=${{ secrets.MONGODB_COLLECTION }}" >> .env
+        
+    - name: Run podcast sync
+      run: python -m podcast_pal.main 
