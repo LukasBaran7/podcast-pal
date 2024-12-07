@@ -23,7 +23,6 @@ A Python tool for tracking and analyzing your Overcast podcast listening history
      PODCAST_DB=your_podcast_db_connection_string
      EMAIL=your_overcast_email
      PASSWORD=your_overcast_password
-     SESSION_PATH=overcast_session.pkl
      MONGODB_DATABASE=my_podcast_library
      MONGODB_COLLECTION=episode_history
      ```

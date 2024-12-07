@@ -29,7 +29,6 @@ jobs:
         echo "PODCAST_DB=${{ secrets.PODCAST_DB }}" >> .env
         echo "EMAIL=${{ secrets.OVERCAST_EMAIL }}" >> .env
         echo "PASSWORD=${{ secrets.OVERCAST_PASSWORD }}" >> .env
-        echo "SESSION_PATH=overcast_session.pkl" >> .env
         echo "MONGODB_DATABASE=${{ secrets.MONGODB_DATABASE }}" >> .env
         echo "MONGODB_COLLECTION=${{ secrets.MONGODB_COLLECTION }}" >> .env
         
