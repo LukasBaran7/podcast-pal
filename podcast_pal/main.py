@@ -73,8 +73,7 @@ def check_environment():
     load_dotenv()
     required_vars = [
         'EMAIL', 'PASSWORD', 'PODCAST_DB', 
-        'MONGODB_DATABASE', 'MONGODB_COLLECTION',
-        'SESSION_PATH'
+        'MONGODB_DATABASE', 'MONGODB_COLLECTION'
     ]
     
     missing = [var for var in required_vars if not os.getenv(var)]
