@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch, ANY
 from datetime import datetime
 
 from podcast_pal.storage.mongodb import (
-    get_mongodb_collections,
+    get_mongodb_collection,
     update_podcast,
     _get_mongodb_config,
     _update_existing_podcast,
@@ -47,8 +47,8 @@ def mock_collection():
     collection.update_one.return_value = Mock()
     return collection
 
-def test_get_mongodb_collections():
-    """Test MongoDB collections initialization"""
+def test_get_mongodb_collection():
+    """Test MongoDB collection initialization"""
     env_vars = {
         'PODCAST_DB': 'mongodb://localhost',
         'MONGODB_DATABASE': 'test_db',
@@ -59,25 +59,21 @@ def test_get_mongodb_collections():
         with patch('podcast_pal.storage.mongodb.MongoClient') as mock_client:
             # Create mock objects
             mock_db = Mock()
-            mock_played_collection = Mock()
-            mock_unplayed_collection = Mock()
+            mock_collection = Mock()
             
             # Setup the chain of mocks
             mock_client_instance = Mock()
             mock_client.return_value = mock_client_instance
             mock_client_instance.__getitem__ = Mock()
             mock_client_instance.__getitem__.return_value = mock_db
-            mock_db.get_collection.side_effect = [mock_played_collection, mock_unplayed_collection]
+            mock_db.get_collection.return_value = mock_collection
             
-            played_collection, unplayed_collection = get_mongodb_collections()
+            collection = get_mongodb_collection()
             
-            assert played_collection == mock_played_collection
-            assert unplayed_collection == mock_unplayed_collection
+            assert collection == mock_collection
             mock_client.assert_called_once_with('mongodb://localhost')
             mock_client_instance.__getitem__.assert_called_once_with('test_db')
-            assert mock_db.get_collection.call_count == 2
-            mock_db.get_collection.assert_any_call('test_collection', codec_options=ANY)
-            mock_db.get_collection.assert_any_call('test_collection_unplayed', codec_options=ANY)
+            mock_db.get_collection.assert_called_once_with('test_collection', codec_options=ANY)
 
 def test_get_mongodb_config_missing_vars():
     """Test handling of missing environment variables"""
