@@ -85,8 +85,8 @@ def _insert_new_podcast(collection: Collection, podcast: Podcast) -> bool:
     collection.insert_one(_serialize_podcast(podcast))
     return True
 
-def get_mongodb_collections() -> tuple[Collection, Collection]:
-    """Initialize and return both MongoDB collections"""
+def get_mongodb_collection() -> Collection:
+    """Initialize and return MongoDB collection"""
     config = _get_mongodb_config()
     client = MongoClient(config['uri'])
     db = client[config['db']]
@@ -95,12 +95,10 @@ def get_mongodb_collections() -> tuple[Collection, Collection]:
         tz_aware=True,
         unicode_decode_error_handler='replace'
     )
+    collection = db.get_collection(config['collection'], codec_options=codec_options)
     
-    played_collection = db.get_collection(config['collection'], codec_options=codec_options)
-    unplayed_collection = db.get_collection(f"{config['collection']}_unplayed", codec_options=codec_options)
-    
-    logger.info(f"Connected to MongoDB collections '{config['db']}.{config['collection']}' and '{config['db']}.{config['collection']}_unplayed'")
-    return played_collection, unplayed_collection
+    logger.info(f"Connected to MongoDB collection '{config['db']}.{config['collection']}'")
+    return collection
 
 def _get_mongodb_config() -> Dict[str, str]:
     """Get and validate MongoDB configuration from environment"""
