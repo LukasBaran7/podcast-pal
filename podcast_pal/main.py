@@ -15,7 +15,7 @@ from podcast_pal.auth.session import SessionManager
 from podcast_pal.fetchers.opml import fetch_opml, parse_opml
 from podcast_pal.processor import process_podcasts
 from podcast_pal.storage.cache import load_cached_opml
-from podcast_pal.storage.mongodb import get_mongodb_collection, update_podcast
+from podcast_pal.storage.mongodb import get_mongodb_collections, update_podcast
 
 # Configure more detailed logging
 logging.basicConfig(
@@ -47,19 +47,25 @@ def main():
         session_manager = SessionManager()
         
         # Process podcasts
-        processed_podcasts = fetch_and_parse_podcasts(session_manager)
-        collection = get_mongodb_collection()
+        played_podcasts, unplayed_podcasts = fetch_and_parse_podcasts(session_manager)
+        played_collection, unplayed_collection = get_mongodb_collections()
 
-        # Save podcasts
-        updates_count = sum(
-            update_podcast(collection, podcast) 
-            for podcast in processed_podcasts
+        # Save played podcasts
+        played_updates = sum(
+            update_podcast(played_collection, podcast) 
+            for podcast in played_podcasts
         )
 
-        if updates_count == 0:
+        # Save unplayed podcasts
+        unplayed_updates = sum(
+            update_podcast(unplayed_collection, podcast)
+            for podcast in unplayed_podcasts
+        )
+
+        if played_updates == 0 and unplayed_updates == 0:
             logger.info("No podcasts were updated in this run")
         else:
-            logger.info(f"Updated {updates_count} podcasts in this run")
+            logger.info(f"Updated {played_updates} played podcasts and {unplayed_updates} unplayed podcasts in this run")
             
     except PodcastPalError as e:
         logger.error(f"Application error: {str(e)}")

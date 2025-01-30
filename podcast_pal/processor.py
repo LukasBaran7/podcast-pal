@@ -13,25 +13,42 @@ logger = logging.getLogger(__name__)
 
 DAYS_TO_KEEP = 3
 
-def process_podcasts(raw_podcasts: List[RawPodcastData], session) -> List[Podcast]:
-    """Process all podcasts to find recently played episodes"""
+def process_podcasts(raw_podcasts: List[RawPodcastData], session) -> tuple[List[Podcast], List[Podcast]]:
+    """Process all podcasts to find both played and unplayed episodes"""
     warsaw_tz = gettz('Europe/Warsaw')
     now = datetime.now(warsaw_tz)
-    return [process_podcast(podcast, now, session) for podcast in raw_podcasts]
+    played_podcasts = []
+    unplayed_podcasts = []
+    
+    for raw_podcast in raw_podcasts:
+        played, unplayed = process_podcast(raw_podcast, now, session)
+        if played.episodes:
+            played_podcasts.append(played)
+        if unplayed.episodes:
+            unplayed_podcasts.append(unplayed)
+            
+    return played_podcasts, unplayed_podcasts
 
 def process_podcast(raw_podcast: RawPodcastData, now: datetime, session, 
-                   days_to_keep: int = DAYS_TO_KEEP) -> Podcast:
-    """Process a single podcast and its episodes"""
+                   days_to_keep: int = DAYS_TO_KEEP) -> tuple[Podcast, Podcast]:
+    """Process a single podcast and separate played/unplayed episodes"""
     episodes = list(raw_podcast)
     artwork_url = get_podcast_artwork(episodes, session) if episodes else ''
     
-    processed_episodes = [
-        process_episode(episode, session)
-        for episode in episodes
-        if should_process_episode(episode, now, days_to_keep)
-    ]
+    played_episodes = []
+    unplayed_episodes = []
     
-    return Podcast.from_raw_data(raw_podcast, processed_episodes, artwork_url)
+    for episode in episodes:
+        processed_episode = process_episode(episode, session)
+        if episode.attrib.get('played', '0') == '1':
+            if should_process_played_episode(episode, now, days_to_keep):
+                played_episodes.append(processed_episode)
+        else:
+            unplayed_episodes.append(processed_episode)
+    
+    played_podcast = Podcast.from_raw_data(raw_podcast, played_episodes, artwork_url)
+    unplayed_podcast = Podcast.from_raw_data(raw_podcast, unplayed_episodes, artwork_url)
+    return played_podcast, unplayed_podcast
 
 def get_podcast_artwork(episodes: List[RawPodcastData], session) -> str:
     """Get artwork URL for podcast from first episode"""
@@ -47,19 +64,14 @@ def process_episode(raw_episode: RawPodcastData, session) -> Episode:
     )
     return Episode.from_raw_data(raw_episode, summary)
 
-def should_process_episode(episode: RawPodcastData, now: datetime, 
-                         days_to_keep: int = DAYS_TO_KEEP) -> bool:
-    """Check if an episode should be processed based on play status and recency"""
-    if episode.attrib.get('played', '0') != '1':
-        return False
-        
+def should_process_played_episode(episode: RawPodcastData, now: datetime, 
+                                days_to_keep: int = DAYS_TO_KEEP) -> bool:
+    """Check if a played episode should be processed based on recency"""
     warsaw_tz = gettz('Europe/Warsaw')
-    # Ensure now is timezone-aware
     if now.tzinfo is None:
         now = now.replace(tzinfo=warsaw_tz)
         
     user_activity_date = parse_dt(episode.attrib['userUpdatedDate'])
-    # Ensure user_activity_date is timezone-aware
     if user_activity_date.tzinfo is None:
         user_activity_date = user_activity_date.replace(tzinfo=warsaw_tz)
     else:
