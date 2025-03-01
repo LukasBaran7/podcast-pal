@@ -20,6 +20,7 @@ class Episode:
     play_progress: Optional[int]
     last_played_at: Optional[datetime]
     summary: str
+    duration: Optional[int] = None  # Duration in seconds
 
     @classmethod
     def from_raw_data(cls, raw_data: Element, summary: str) -> 'Episode':
@@ -34,7 +35,8 @@ class Episode:
             play_progress=attrs.get('progress'),
             last_played_at=datetime.fromisoformat(attrs['userUpdatedDate']) 
                 if attrs.get('userUpdatedDate') else None,
-            summary=summary
+            summary=summary,
+            duration=int(attrs.get('duration', 0)) if attrs.get('duration') else None
         )
 
     def to_dict(self):
@@ -51,6 +53,7 @@ class Podcast:
     episodes: List[Episode]
     created_at: datetime
     source: str = "overcast"
+    category: Optional[str] = None  # Podcast category
 
     @classmethod
     def from_raw_data(cls, raw_data: RawPodcastData, 
@@ -61,5 +64,6 @@ class Podcast:
             title=raw_data.attrib['title'],
             artwork_url=artwork_url,
             episodes=episodes,
-            created_at=datetime.now()
+            created_at=datetime.now(),
+            category=raw_data.attrib.get('category')
         ) 

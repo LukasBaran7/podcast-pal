@@ -19,6 +19,7 @@ def _serialize_podcast(podcast: Podcast) -> Dict[str, Any]:
         "artwork_url": podcast.artwork_url,
         "source": podcast.source,
         "created_at": podcast.created_at,
+        "category": podcast.category,
         "episodes": [_serialize_episode(episode) for episode in podcast.episodes]
     }
 
@@ -32,7 +33,8 @@ def _serialize_episode(episode) -> Dict[str, Any]:
         "published_date": episode.published_date,
         "play_progress": episode.play_progress,
         "last_played_at": episode.last_played_at,
-        "summary": html.unescape(episode.summary)
+        "summary": html.unescape(episode.summary),
+        "duration": episode.duration
     }
 
 def update_podcast(collection: Collection, podcast: Podcast) -> bool:
