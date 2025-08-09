@@ -11,7 +11,7 @@ from .fetchers.summary import get_episode_summary
 
 logger = logging.getLogger(__name__)
 
-DAYS_TO_KEEP = 3
+DAYS_TO_KEEP = 45
 
 def process_podcasts(raw_podcasts: List[RawPodcastData], session) -> List[Podcast]:
     """Process all podcasts to find recently played episodes"""
